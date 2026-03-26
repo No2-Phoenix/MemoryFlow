@@ -29,13 +29,21 @@ class _HomePageState extends ConsumerState<HomePage>
     vsync: this,
     duration: const Duration(milliseconds: 420),
   );
+  static const int _frameWarmupCount = 18;
+  static const int _frameSampleWindow = 64;
+  static const double _slowFrameRatioThreshold = 0.34;
+  static const int _slowFrameBudgetMs = 24;
   int _lastStoryIndex = 0;
   int _storyDirection = 1;
+  int _timingSamples = 0;
+  int _slowFrameHits = 0;
+  bool _adaptiveLowEffects = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addTimingsCallback(_handleFrameTimings);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selection = ref.read(ambientPlaybackSelectionProvider);
       unawaited(ref.read(homeAmbientAudioControllerProvider).sync(selection));
@@ -51,9 +59,44 @@ class _HomePageState extends ConsumerState<HomePage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeTimingsCallback(_handleFrameTimings);
     WidgetsBinding.instance.removeObserver(this);
     _overviewController.dispose();
     super.dispose();
+  }
+
+  void _handleFrameTimings(List<FrameTiming> timings) {
+    if (_adaptiveLowEffects || !mounted) {
+      return;
+    }
+
+    for (final timing in timings) {
+      _timingSamples++;
+      if (_timingSamples <= _frameWarmupCount) {
+        continue;
+      }
+
+      final buildMs = timing.buildDuration.inMilliseconds;
+      final rasterMs = timing.rasterDuration.inMilliseconds;
+      final totalMs = timing.totalSpan.inMilliseconds;
+      final isSlow =
+          totalMs > _slowFrameBudgetMs || buildMs > 18 || rasterMs > 18;
+      if (isSlow) {
+        _slowFrameHits++;
+      }
+
+      final effectiveSamples = _timingSamples - _frameWarmupCount;
+      if (effectiveSamples < _frameSampleWindow) {
+        continue;
+      }
+
+      final slowRatio = _slowFrameHits / effectiveSamples;
+      if (slowRatio >= _slowFrameRatioThreshold) {
+        setState(() => _adaptiveLowEffects = true);
+        WidgetsBinding.instance.removeTimingsCallback(_handleFrameTimings);
+      }
+      break;
+    }
   }
 
   void _syncOverview(bool isOpen) {
@@ -120,7 +163,8 @@ class _HomePageState extends ConsumerState<HomePage>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isCompact = constraints.maxWidth < 980;
-            final lowEffects = constraints.maxWidth < 430;
+            final lowEffects =
+                _adaptiveLowEffects || constraints.maxWidth < 430;
 
             return Stack(
               children: [
