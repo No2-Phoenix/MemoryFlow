@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-14
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -54,10 +54,10 @@ jobs:
       APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_BUNDLE_ID: ${{ secrets.APPLE_BUNDLE_ID }}
-      KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+      KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD || secrets.KEYCHAIN_PASSWORD }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate required secrets
         shell: bash
@@ -66,7 +66,11 @@ jobs:
           required=(APPLE_P12_BASE64 APPLE_P12_PASSWORD APPLE_PROVISIONING_PROFILE_BASE64 APPLE_TEAM_ID APPLE_BUNDLE_ID KEYCHAIN_PASSWORD)
           for key in "${required[@]}"; do
             if [ -z "${!key:-}" ]; then
-              echo "Missing required secret: $key"
+              if [ "$key" = "KEYCHAIN_PASSWORD" ]; then
+                echo "Missing required secret: APPLE_KEYCHAIN_PASSWORD (or KEYCHAIN_PASSWORD)"
+              else
+                echo "Missing required secret: $key"
+              fi
               exit 1
             fi
           done
