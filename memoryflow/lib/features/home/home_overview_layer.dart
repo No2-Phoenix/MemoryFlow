@@ -103,6 +103,8 @@ class _TimelineOverviewState extends State<_TimelineOverview> {
         ListView.builder(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
+          itemExtent: 214,
+          cacheExtent: 428,
           itemCount: widget.stories.length,
           itemBuilder: (context, index) {
             final story = widget.stories[index];
@@ -153,9 +155,11 @@ class _TimelineOverviewState extends State<_TimelineOverview> {
                                 child: StoryArtwork(
                                   palette: story.palette,
                                   imagePath: story.coverImagePath,
-                                  imageBlurSigma: story.coverBlurSigma,
+                                  imageBlurSigma: 0,
                                   overlayColor: story.dominantColor,
                                   showAtmosphere: false,
+                                  isThumbnail: true,
+                                  disableImageBlur: true,
                                 ),
                               ),
                             ),
