@@ -1,0 +1,84 @@
+name: memoryflow
+description: "MemoryFlow - 沉浸式照片故事播放器"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI 基础
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  
+  # 状态管理
+  flutter_riverpod: ^2.5.0
+  riverpod_annotation: ^2.3.0
+  
+  # 路由管理
+  go_router: ^14.0.0
+  
+  # 图片处理
+  image_picker: ^1.0.0
+  # image_cropper: ^5.0.0  # Web 兼容性问题
+  # flutter_image_compress: ^2.0.0  # Web 兼容性问题
+  palette_generator: ^0.3.3
+  
+  # 音频播放
+  just_audio: ^0.9.37
+  
+  # 地图
+  # flutter_map: ^6.1.0  # Web 兼容性问题
+  # latlong2: ^0.9.0  # Web 兼容性问题
+  
+  # EXIF 解析
+  exif: ^3.1.0
+  # geocoding: ^3.0.0  # Web 兼容性问题
+  
+  # 动画
+  flutter_animate: ^4.5.0
+  
+  # 文件处理
+  path_provider: ^2.1.0
+  file_picker: ^8.1.6
+  share_plus: ^10.1.2
+  permission_handler: ^11.0.0
+  photo_manager: ^3.7.1
+  
+  # 存储
+  shared_preferences: ^2.2.0
+  just_audio_windows: ^0.2.2
+  
+  # 视频导出
+  ffmpeg_kit_flutter_new: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.3.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/
+  
+  # 字体配置 (临时注释，缺少字体文件)
+  # fonts:
+  #   - family: NotoSerifSC
+  #     fonts:
+  #       - asset: fonts/NotoSerifSC-Bold.ttf
+  #       - asset: fonts/NotoSerifSC-Medium.ttf
+  #       - asset: fonts/NotoSerifSC-Regular.ttf
+  #       - asset: fonts/NotoSerifSC-Light.ttf
+  #   - family: NotoSansSC
+  #     fonts:
+  #       - asset: fonts/NotoSansSC-Bold.ttf
+  #       - asset: fonts/NotoSansSC-Medium.ttf
+  #       - asset: fonts/NotoSansSC-Regular.ttf
+  #       - asset: fonts/NotoSansSC-Light.ttf
