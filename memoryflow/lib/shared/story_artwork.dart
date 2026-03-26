@@ -12,6 +12,8 @@ class StoryArtwork extends StatelessWidget {
     this.showAtmosphere = true,
     this.imagePath,
     this.imageBlurSigma = 0,
+    this.isThumbnail = false,
+    this.disableImageBlur = false,
   });
 
   final List<Color> palette;
@@ -19,21 +21,28 @@ class StoryArtwork extends StatelessWidget {
   final bool showAtmosphere;
   final String? imagePath;
   final double imageBlurSigma;
+  final bool isThumbnail;
+  final bool disableImageBlur;
 
   @override
   Widget build(BuildContext context) {
-    final backdrop = _ArtworkBackdrop(palette: palette, imagePath: imagePath);
+    final backdrop = _ArtworkBackdrop(
+      palette: palette,
+      imagePath: imagePath,
+      isThumbnail: isThumbnail,
+    );
+    final effectiveBlurSigma = disableImageBlur ? 0.0 : imageBlurSigma;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (imageBlurSigma <= 0)
+        if (effectiveBlurSigma <= 0)
           backdrop
         else
           ImageFiltered(
             imageFilter: ImageFilter.blur(
-              sigmaX: imageBlurSigma,
-              sigmaY: imageBlurSigma,
+              sigmaX: effectiveBlurSigma,
+              sigmaY: effectiveBlurSigma,
             ),
             child: backdrop,
           ),
@@ -70,10 +79,15 @@ class StoryArtwork extends StatelessWidget {
 }
 
 class _ArtworkBackdrop extends StatelessWidget {
-  const _ArtworkBackdrop({required this.palette, required this.imagePath});
+  const _ArtworkBackdrop({
+    required this.palette,
+    required this.imagePath,
+    required this.isThumbnail,
+  });
 
   final List<Color> palette;
   final String? imagePath;
+  final bool isThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +107,22 @@ class _ArtworkBackdrop extends StatelessWidget {
         final height = constraints.hasBoundedHeight
             ? constraints.maxHeight
             : MediaQuery.maybeSizeOf(context)?.height;
+        final minCacheWidth = isThumbnail ? 96 : 320;
+        final maxCacheWidth = isThumbnail ? 512 : 1500;
+        final minCacheHeight = isThumbnail ? 128 : 420;
+        final maxCacheHeight = isThumbnail ? 768 : 2400;
         final cacheWidth = width == null
             ? null
-            : (width * pixelRatio * 1.05).round().clamp(320, 1500);
+            : (width * pixelRatio * 1.05).round().clamp(
+                minCacheWidth,
+                maxCacheWidth,
+              );
         final cacheHeight = height == null
             ? null
-            : (height * pixelRatio * 1.05).round().clamp(420, 2400);
+            : (height * pixelRatio * 1.05).round().clamp(
+                minCacheHeight,
+                maxCacheHeight,
+              );
         final imageProvider = ResizeImage.resizeIfNeeded(
           cacheWidth,
           cacheHeight,
