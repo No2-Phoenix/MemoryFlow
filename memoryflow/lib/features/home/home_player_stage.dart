@@ -477,8 +477,11 @@ class _StoryCanvas extends StatelessWidget {
             child: StoryArtwork(
               palette: story.palette,
               imagePath: story.coverImagePath,
-              imageBlurSigma: story.coverBlurSigma,
+              imageBlurSigma: lowEffects
+                  ? math.min(story.coverBlurSigma, 1.2)
+                  : story.coverBlurSigma,
               overlayColor: story.dominantColor,
+              disableImageBlur: lowEffects && story.coverBlurSigma <= 0.4,
             ),
           ),
         ),
@@ -582,6 +585,7 @@ class _StoryCanvas extends StatelessWidget {
             child: StoryTextStage(
               story: story,
               mode: mode,
+              lowEffects: lowEffects,
               textColor: textColor,
               shadowColor: shadowColor,
             ),
