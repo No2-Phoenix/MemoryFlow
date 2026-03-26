@@ -12,12 +12,14 @@ class StoryTextStage extends StatelessWidget {
     super.key,
     required this.story,
     required this.mode,
+    required this.lowEffects,
     required this.textColor,
     required this.shadowColor,
   });
 
   final StoryMoment story;
   final StoryTextMode mode;
+  final bool lowEffects;
   final Color textColor;
   final Color shadowColor;
 
@@ -28,6 +30,7 @@ class StoryTextStage extends StatelessWidget {
         final displayLines = _normalizeDisplayLines(story.lines, maxChars: 12);
         return _LyricFlowText(
           lines: displayLines,
+          lowEffects: lowEffects,
           textColor: textColor,
           shadowColor: shadowColor,
         );
@@ -35,6 +38,7 @@ class StoryTextStage extends StatelessWidget {
         final displayLines = _normalizeDisplayLines(story.lines);
         return _SubtitleText(
           lines: displayLines,
+          lowEffects: lowEffects,
           textColor: textColor,
           shadowColor: shadowColor,
         );
@@ -59,11 +63,13 @@ class StoryTextStage extends StatelessWidget {
 class _LyricFlowText extends StatefulWidget {
   const _LyricFlowText({
     required this.lines,
+    required this.lowEffects,
     required this.textColor,
     required this.shadowColor,
   });
 
   final List<String> lines;
+  final bool lowEffects;
   final Color textColor;
   final Color shadowColor;
 
@@ -72,12 +78,13 @@ class _LyricFlowText extends StatefulWidget {
 }
 
 class _LyricFlowTextState extends State<_LyricFlowText> {
-  static const double _lineGap = 102;
-  static const double _autoVelocity = 0.56;
   Timer? _timer;
   Timer? _resumeTimer;
   double _scrollOffset = 0;
   bool _autoScroll = true;
+
+  double get _lineGap => widget.lowEffects ? 96 : 102;
+  double get _autoVelocity => widget.lowEffects ? 0.5 : 0.56;
 
   @override
   void initState() {
@@ -91,6 +98,9 @@ class _LyricFlowTextState extends State<_LyricFlowText> {
     if (oldWidget.lines.join() != widget.lines.join()) {
       _scrollOffset = 0;
     }
+    if (oldWidget.lowEffects != widget.lowEffects) {
+      _startAutoScroll();
+    }
   }
 
   @override
@@ -102,12 +112,15 @@ class _LyricFlowTextState extends State<_LyricFlowText> {
 
   void _startAutoScroll() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 28), (_) {
-      if (!_autoScroll || !mounted) {
-        return;
-      }
-      setState(() => _advance(_autoVelocity));
-    });
+    _timer = Timer.periodic(
+      Duration(milliseconds: widget.lowEffects ? 42 : 28),
+      (_) {
+        if (!_autoScroll || !mounted) {
+          return;
+        }
+        setState(() => _advance(_autoVelocity));
+      },
+    );
   }
 
   void _advance(double delta) {
@@ -155,7 +168,7 @@ class _LyricFlowTextState extends State<_LyricFlowText> {
             final focus = 1 - Curves.easeOutCubic.transform(normalized);
             final easedFocus = Curves.easeInOutCubic.transform(focus);
             final opacity = lerpDouble(0.24, 1.0, easedFocus)!.clamp(0.0, 1.0);
-            final lineWidth = viewportWidth * 0.8;
+            final lineWidth = viewportWidth * (widget.lowEffects ? 0.9 : 0.86);
 
             widgets.add(
               Positioned(
@@ -180,18 +193,20 @@ class _LyricFlowTextState extends State<_LyricFlowText> {
                         alpha: lerpDouble(0.42, 1.0, easedFocus)!,
                       ),
                       height: 1.42,
-                      fontSize: 18,
+                      fontSize: widget.lowEffects ? 17 : 18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0,
-                      shadows: [
-                        Shadow(
-                          color: widget.shadowColor.withValues(
-                            alpha: lerpDouble(0.08, 0.2, easedFocus)!,
-                          ),
-                          blurRadius: 5.5,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      shadows: widget.lowEffects
+                          ? const []
+                          : [
+                              Shadow(
+                                color: widget.shadowColor.withValues(
+                                  alpha: lerpDouble(0.08, 0.2, easedFocus)!,
+                                ),
+                                blurRadius: 5.5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                   ),
                 ),
@@ -217,11 +232,13 @@ class _LyricFlowTextState extends State<_LyricFlowText> {
 class _SubtitleText extends StatefulWidget {
   const _SubtitleText({
     required this.lines,
+    required this.lowEffects,
     required this.textColor,
     required this.shadowColor,
   });
 
   final List<String> lines;
+  final bool lowEffects;
   final Color textColor;
   final Color shadowColor;
 
@@ -289,6 +306,7 @@ class _SubtitleTextState extends State<_SubtitleText> {
         },
         child: _TextChip(
           key: ValueKey(_index),
+          enableBackdropBlur: !widget.lowEffects,
           text: widget.lines[_index],
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: widget.textColor,
@@ -455,27 +473,37 @@ class _TypewriterTextState extends State<_TypewriterText> {
 }
 
 class _TextChip extends StatelessWidget {
-  const _TextChip({super.key, required this.text, required this.style});
+  const _TextChip({
+    super.key,
+    required this.text,
+    required this.style,
+    this.enableBackdropBlur = true,
+  });
 
   final String text;
   final TextStyle? style;
+  final bool enableBackdropBlur;
 
   @override
   Widget build(BuildContext context) {
+    final content = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        color: Colors.white.withValues(alpha: 0.1),
+      ),
+      child: Text(text, textAlign: TextAlign.center, style: style),
+    );
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-          child: Text(text, textAlign: TextAlign.center, style: style),
-        ),
-      ),
+      child: enableBackdropBlur
+          ? BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: content,
+            )
+          : content,
     );
   }
 }
